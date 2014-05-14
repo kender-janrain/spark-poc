@@ -1,15 +1,20 @@
 package janrain.jedi.logging.poc
 
 import java.util
-import scala.beans.BeanProperty
-import akka.actor._
+import java.util.concurrent.Executors
+
+import beans.BeanProperty
+import collection.JavaConverters.asScalaBufferConverter
+
 import org.apache.spark.streaming.receivers.Receiver
-import com.amazonaws.auth.{AWSCredentialsProvider, AWSCredentials}
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
-import com.amazonaws.services.kinesis.clientlibrary.interfaces.{IRecordProcessorCheckpointer, IRecordProcessor, IRecordProcessorFactory}
+
+import com.amazonaws.auth.{AWSCredentials, AWSCredentialsProvider}
+import com.amazonaws.services.kinesis.clientlibrary.interfaces.{IRecordProcessor, IRecordProcessorCheckpointer, IRecordProcessorFactory}
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{InitialPositionInStream, KinesisClientLibConfiguration, Worker}
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
 import com.amazonaws.services.kinesis.model.Record
-import java.util.concurrent.Executors
+
+import akka.actor.{Actor, ActorLogging, FSM, LoggingFSM, actorRef2Scala}
 
 object KinesisReceiver {
   sealed trait State
@@ -37,7 +42,6 @@ object KinesisReceiver {
         }
 
         def processRecords(records: util.List[Record], checkpointer: IRecordProcessorCheckpointer) {
-          println(s"kinesis: ${records.size} records")
           records.asScala foreach { record ⇒
             onRecord(record)
           }
@@ -53,7 +57,7 @@ object KinesisReceiver {
         @BeanProperty val credentials = awsCredentials
         def refresh() {}
       },
-      "kender-local")
+      "kender-local").withInitialPositionInStream(InitialPositionInStream.LATEST)
 
     new Worker(recordProcessorFactory, config)
   }
@@ -79,7 +83,6 @@ class KinesisReceiver(awsCredentials: AWSCredentials, streamName: String)
 
   when(Running) {
     case Event(KinesisData(data), _) ⇒
-      println(s"kinesis: ${data.length} bytes")
       pushBlock(data)
       stay()
   }

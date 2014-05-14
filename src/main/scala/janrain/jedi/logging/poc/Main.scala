@@ -34,7 +34,7 @@ object Main extends App {
   val sparkContext = new SparkContext(sparkConfig)
 //  sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", accessKeyId)
 //  sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", secretAccessKey)
-  val spikeType = SpikeTypes.batch
+  val spikeType = SpikeTypes.streamKinesis
 
 
   spikeType match {

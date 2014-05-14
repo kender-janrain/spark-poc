@@ -5,6 +5,8 @@ import spray.json.{JsObject, JsonParser}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Seconds}
 import org.apache.spark.SparkContext
+import spray.json.DefaultJsonProtocol._
+import java.net.URL
 
 trait StreamSpike {
   def stream(streamingContext: StreamingContext): DStream[String]
@@ -17,15 +19,19 @@ trait StreamSpike {
     stream(streamingContext) map { value ⇒
       Try { JsonParser(value).asJsObject } getOrElse JsObject()
     } filter { js ⇒
-      js has ("capture-app-id", "webhook-callback", "webhook-response-code")
+      js has ("request-uri", "timer-elapsed")
     } map { js ⇒
-      (js string "capture-app-id", js string "webhook-callback", js string "webhook-response-code")
-    } checkpoint Seconds(60) countByValueAndWindow(Seconds(10), Seconds(5)) foreachRDD { rdd ⇒
-      println(s"--- ${new java.util.Date} ---")
-      rdd foreach println
-      println()
+      (js string "request-uri", js.fields("timer-elapsed").convertTo[String].toLong )
+    } map { case (uri, timer_elapsed) =>
+      (new URL(uri).getHost, timer_elapsed)
+    } checkpoint Seconds(60) window(Seconds(10)) foreachRDD { rdd ⇒
+      rdd.groupBy(_._1) map { case (host, times) ⇒
+        (host, times.length, times.map(_._2).sum / times.length)
+      } foreach {
+        case ("ecic--dev1.cs18.my.salesforce.com", num_timers, avg) ⇒ println(s"$num_timers, $avg")
+        case (host, num_timers, avg) ⇒
+      }
     }
-
 
     streamingContext.start()
     streamingContext.awaitTermination()
