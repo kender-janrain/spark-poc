@@ -6,7 +6,7 @@ import java.util.concurrent.Executors
 import akka.actor._
 import com.amazonaws.auth.{AWSCredentials, AWSCredentialsProvider}
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.{IRecordProcessor, IRecordProcessorCheckpointer, IRecordProcessorFactory}
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{InitialPositionInStream, KinesisClientLibConfiguration, Worker}
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
 import com.amazonaws.services.kinesis.model.Record
 import org.apache.spark.streaming.receiver.ActorHelper
@@ -39,7 +39,6 @@ object KinesisReceiver {
         }
 
         def processRecords(records: util.List[Record], checkpointer: IRecordProcessorCheckpointer) {
-          println(s"kinesis: ${records.size} records")
           records.asScala foreach { record ⇒
             onRecord(record)
           }
@@ -55,7 +54,7 @@ object KinesisReceiver {
         @BeanProperty val credentials = awsCredentials
         def refresh() {}
       },
-      "kender-local")
+      "kender-local").withInitialPositionInStream(InitialPositionInStream.LATEST)
 
     new Worker(recordProcessorFactory, config)
   }
