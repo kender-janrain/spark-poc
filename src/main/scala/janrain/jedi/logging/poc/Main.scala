@@ -15,21 +15,25 @@ object Main extends App {
 
   val Array(master, checkpointLocation) = args
 
-  val sparkConfig = new SparkConf()
-    .setMaster(master)
-//    .setMaster("spark://ec2-174-129-110-220.compute-1.amazonaws.com:7077")
-//    .setMaster("local[8]")
-//    .setSparkHome(System.getenv("SPARK_HOME"))
-    .setAppName("jedi-logging-poc")
-    .setJars(SparkContext.jarOfObject(Main))
-    .setAll(List(
+  val sparkConfig = {
+    val jars: Seq[String] = Seq(SparkContext.jarOfObject(Main)).flatten
+
+    new SparkConf()
+      .setMaster(master)
+      //    .setMaster("spark://ec2-174-129-110-220.compute-1.amazonaws.com:7077")
+      //    .setMaster("local[8]")
+      //    .setSparkHome(System.getenv("SPARK_HOME"))
+      .setAppName("jedi-logging-poc")
+      .setJars(jars)
+      .setAll(List(
       "spark.cleaner.ttl" → "240",
-//      "spark.local.dir" → "./target/spark",
+      //      "spark.local.dir" → "./target/spark",
       "akka.loglevel" → "DEBUG",
       "akka.log-dead-letters" → "100",
       "akka.actor.debug.receive" → "on",
       "akka.actor.debug.fsm" → "on",
       "spark.cores.max" → "12"))
+  }
 
   val sparkContext = new SparkContext(sparkConfig)
 //  sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", accessKeyId)

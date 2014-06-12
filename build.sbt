@@ -9,7 +9,7 @@ name := "jedi-logging-poc"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 val sparkExclusions = Seq(
   ExclusionRule(name = "minlog"),
@@ -20,9 +20,12 @@ val sparkExclusions = Seq(
   ExclusionRule(name = "commons-collections")
 )
 
+val sparkVersion = "1.0.0"
+
+
 libraryDependencies ++= Seq(
   "io.spray" %% "spray-json" % "1.2.5",
-  ("org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided").excludeAll(sparkExclusions: _*),
-  ("org.apache.spark" %% "spark-streaming-kafka" % "0.9.0-incubating").excludeAll(sparkExclusions: _*),
+  ("org.apache.spark" %% "spark-core" % sparkVersion % "provided").excludeAll(sparkExclusions: _*),
+  ("org.apache.spark" %% "spark-streaming-kafka" % sparkVersion).excludeAll(sparkExclusions: _*),
   ("com.amazonaws" % "amazon-kinesis-client" % "1.0.0").excludeAll()
 )

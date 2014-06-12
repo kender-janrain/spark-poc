@@ -1,15 +1,17 @@
 package janrain.jedi.logging.poc
 
 import java.util
-import scala.beans.BeanProperty
+import java.util.concurrent.Executors
+
 import akka.actor._
-import org.apache.spark.streaming.receivers.Receiver
-import com.amazonaws.auth.{AWSCredentialsProvider, AWSCredentials}
+import com.amazonaws.auth.{AWSCredentials, AWSCredentialsProvider}
+import com.amazonaws.services.kinesis.clientlibrary.interfaces.{IRecordProcessor, IRecordProcessorCheckpointer, IRecordProcessorFactory}
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.{KinesisClientLibConfiguration, Worker}
-import com.amazonaws.services.kinesis.clientlibrary.interfaces.{IRecordProcessorCheckpointer, IRecordProcessor, IRecordProcessorFactory}
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason
 import com.amazonaws.services.kinesis.model.Record
-import java.util.concurrent.Executors
+import org.apache.spark.streaming.receiver.ActorHelper
+
+import scala.beans.BeanProperty
 
 object KinesisReceiver {
   sealed trait State
@@ -62,10 +64,10 @@ object KinesisReceiver {
 class KinesisReceiver(awsCredentials: AWSCredentials, streamName: String)
   extends Actor
   with ActorLogging
-  with Receiver
+  with ActorHelper
   with FSM[KinesisReceiver.State, KinesisReceiver.Data]
   with LoggingFSM[KinesisReceiver.State, KinesisReceiver.Data] {
-  import KinesisReceiver._
+  import janrain.jedi.logging.poc.KinesisReceiver._
 
   when(Stopped) {
     case Event(Start, _) ⇒
@@ -80,7 +82,7 @@ class KinesisReceiver(awsCredentials: AWSCredentials, streamName: String)
   when(Running) {
     case Event(KinesisData(data), _) ⇒
       println(s"kinesis: ${data.length} bytes")
-      pushBlock(data)
+      store(data)
       stay()
   }
 
