@@ -1,5 +1,7 @@
 package janrain.jedi.logging.poc
 
+import java.io.FileWriter
+
 import scala.util.Try
 import spray.json.{JsObject, JsonParser}
 import org.apache.spark.streaming.dstream.DStream
@@ -24,12 +26,16 @@ trait StreamSpike {
       (js string "request-uri", js.fields("timer-elapsed").convertTo[String].toLong )
     } map { case (uri, timer_elapsed) =>
       (new URL(uri).getHost, timer_elapsed)
-    } checkpoint Seconds(60) window(Seconds(10)) foreachRDD { rdd ⇒
+    } checkpoint Seconds(60) window Seconds(10) foreachRDD { rdd ⇒
       rdd.groupBy(_._1) map { case (host, times) ⇒
         (host, times.size, times.map(_._2).sum / times.size)
-      } foreach {
-        case ("ecic--dev1.cs18.my.salesforce.com", num_timers, avg) ⇒ println(s"$num_timers, $avg")
-        case (host, num_timers, avg) ⇒
+      } foreach { case (host, num_timers, avg) ⇒
+        val output = new FileWriter("./target/spark.out")
+        try {
+          output.write(s"$host: $num_timers, $avg\n")
+        } finally {
+          output.close()
+        }
       }
     }
 

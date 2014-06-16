@@ -80,7 +80,7 @@ class KinesisReceiver(awsCredentials: AWSCredentials, streamName: String)
 
   when(Running) {
     case Event(KinesisData(data), _) ⇒
-      println(s"kinesis: ${data.length} bytes")
+//      println(s"kinesis: ${data.length} bytes")
       store(data)
       stay()
   }
